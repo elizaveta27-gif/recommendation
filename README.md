@@ -39,14 +39,6 @@ docker exec -d php php bin/console app:view-write-top
 docker exec -d php php bin/console app:view-write-trend
 docker exec -d php php bin/console app:view-user
 ```
-
-Запустить все сразу:
-```bash
-for cmd in app:create-product app:update-product app:delete-product app:view-write-top app:view-write-trend app:view-user; do
-    docker exec -d php php bin/console $cmd
-done
-```
-
 ### Агрегация трендов (крон, раз в час)
 
 ```bash
