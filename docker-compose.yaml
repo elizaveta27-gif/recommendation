@@ -1,0 +1,78 @@
+services:
+  php-fpm:
+    build: docker
+    container_name: 'php'
+    ports:
+      - '9001:9000'
+    volumes:
+      - ./:/app
+    working_dir: /app
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - service_progress
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: 'nginx'
+    working_dir: /app
+    ports:
+      - '7777:80'
+    volumes:
+      - ./:/app
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php-fpm
+    networks:
+      - service_progress
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: 'postgres'
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-recommendation}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - service_progress
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: 'rabbit-mq'
+    hostname: rabbit-mq
+    ports:
+      - '15672:15672'
+      - '5672:5672'
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-password}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - service_progress
+
+  redis:
+    container_name: 'redis'
+    image: redis:7.4-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - service_progress
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
+
+networks:
+  service_progress:
+    driver: bridge
+    name: service_progress
