@@ -1,0 +1,66 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            $hostRabbit: '%env(RABBITMQ_HOST)%'
+            $portRabbit: '%env(int:RABBITMQ_PORT)%'
+            $userRabbit: '%env(RABBITMQ_USER)%'
+            $passwordRabbit: '%env(RABBITMQ_PASS)%'
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+    Predis\Client:
+        arguments:
+            - '%env(REDIS_URL)%'
+
+    App\Command\Consumers\Product\CreateProductCommand:
+        arguments:
+            $logger: '@monolog.logger.consumer'
+    App\Command\Consumers\Product\UpdateProductCommand:
+        arguments:
+            $logger: '@monolog.logger.consumer'
+    App\Command\Consumers\Product\DeleteProductCommand:
+        arguments:
+            $logger: '@monolog.logger.consumer'
+    App\Command\Consumers\View\WriteTopCommand:
+        arguments:
+            $logger: '@monolog.logger.consumer'
+    App\Command\Consumers\View\WriteTrendCommand:
+        arguments:
+            $logger: '@monolog.logger.generator'
+    App\Command\Scripts\CalculationTrends:
+        arguments:
+            $logger: '@monolog.logger.calculation'
+
+    App\Strategy\Product\Matching\:
+        resource: '../src/Strategy/Product/Matching/'
+        tags: ['matching.strategy']
+          
+  
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+
+when@dev:
+    services:
+        App\Repository\CategoryRepository:
+            public: true
+            autowire: true
+        App\Repository\ProductRepository:
+            public: true
+            autowire: true
