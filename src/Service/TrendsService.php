@@ -29,22 +29,22 @@ class TrendsService
             $date->sub(new DateInterval("PT1H"));
         }
 
-        $this->redis->zunionstore('views:union:current', $current);
-        
-        for($i = 0; $i < 3; $i++) 
+        $this->redis->zunionstore(ViewService::TRENDS_UNION_CURRENT, $current);
+
+        for($i = 0; $i < 3; $i++)
         {
             $prev[] = sprintf(ViewService::VIEW_HOUR_KEY, $date->format(ViewService::FORMAT_DATE_KEY));
             $date->sub(new DateInterval("PT1H"));
         }
-        
-        $this->redis->zunionstore('views:union:prev', $prev);
+
+        $this->redis->zunionstore(ViewService::TRENDS_UNION_PREV, $prev);
         
         $step = 500;
         $offset = 0;
         $result = [];
 
         while (count($result) < 10) {
-            $set = $this->redis->zrevrange('views:union:current', $offset, $offset + $step - 1, ['WITHSCORES' => true]);
+            $set = $this->redis->zrevrange(ViewService::TRENDS_UNION_CURRENT, $offset, $offset + $step - 1, ['WITHSCORES' => true]);
 
             if (empty($set)) {
                 break;
@@ -54,7 +54,7 @@ class TrendsService
 
             $scores = $this->redis->pipeline(function ($pipe) use ($productIds) {
                 foreach ($productIds as $productId) {
-                    $pipe->zscore('views:union:prev', (string) $productId);
+                    $pipe->zscore(ViewService::TRENDS_UNION_PREV, (string) $productId);
                 }
             });
 
@@ -74,17 +74,17 @@ class TrendsService
             $offset += $step;
         }
 
-        $this->redis->set('cache:trends', json_encode($result));
-        
-        $this->redis->del(['views:union:current']);
-        $this->redis->del(['views:union:prev']);
+        $this->redis->set(ViewService::TRENDS_CACHE_KEY, json_encode($result));
+
+        $this->redis->del([ViewService::TRENDS_UNION_CURRENT]);
+        $this->redis->del([ViewService::TRENDS_UNION_PREV]);
         
         return $result;
     }
     
     public function getTrends(): array
     {
-        $trends = $this->redis->get('cache:trends');
+        $trends = $this->redis->get(ViewService::TRENDS_CACHE_KEY);
       
         if (empty($trends)) {
             return [];

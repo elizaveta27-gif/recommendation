@@ -35,7 +35,7 @@ class ProductService
         
         $category = $this->categoryRepository->findByCode($data['category']);
 
-        if (empty($category)) {
+        if ($category === null) {
             throw new CategoryNoFoundException('Category not found');
         }
 
@@ -71,7 +71,7 @@ class ProductService
        
         $category = $this->categoryRepository->findByCode($data['category']);
 
-        if (empty($category)) {
+        if ($category === null) {
             throw new CategoryNoFoundException('Category not found');
         }
 

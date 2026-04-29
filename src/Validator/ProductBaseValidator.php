@@ -22,16 +22,13 @@ class ProductBaseValidator extends BaseValidator
         }
            
         if (!isset($data['category'])) {
-            $errors['category'] = 'Category empty  is empty';
+            $errors['category'] = 'Category is empty';
         }
-        
+
         if (!isset($data['attributes']) || !is_array($data['attributes'])) {
-            $errors['attributes'] = 'Attributes empty  is empty';
-        } else {
-            $keys = array_keys($data['attributes']);
-            if (count($keys) !== count($data['attributes'])) {
-                $errors['attributes'] = 'Attributes array is empty';
-            }
+            $errors['attributes'] = 'Attributes is empty';
+        } elseif (empty($data['attributes'])) {
+            $errors['attributes'] = 'Attributes array is empty';
         }
         
         return $errors;

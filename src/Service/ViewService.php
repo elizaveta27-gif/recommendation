@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Exception\CategoryNoFoundException;
 use App\Exception\DateIncorrectException;
+use App\Exception\ProductNotFoundException;
 use App\Repository\CategoryRepository;
 use App\Repository\ProductRepository;
 use DateTimeImmutable;
@@ -13,10 +14,13 @@ class ViewService
 {
     //количество дней для хранения данных топ товаров
     public const TOP_COUNT_PRODUCTS_EXPIRE = 7;
-    
+
     public const VIEW_HOUR_KEY = 'views:%s';
     public const USER_VIEW = 'view:user:%s';
     public const FORMAT_DATE_KEY = 'Y-m-d-H';
+    public const TRENDS_UNION_CURRENT = 'views:union:current';
+    public const TRENDS_UNION_PREV = 'views:union:prev';
+    public const TRENDS_CACHE_KEY = 'cache:trends';
     
     public function __construct(
         private readonly Client $redis,
@@ -50,22 +54,23 @@ class ViewService
         }
     }
 
-    public function writeTrend(int $productId, int $countView = 1, \DateTimeImmutable $date = new \DateTimeImmutable()): void
+    public function writeTrend(int $productId, int $countView = 1, ?\DateTimeImmutable $date = null): void
     {
         if (!$this->productRepository->findById($productId)) {
-            throw new CategoryNoFoundException('Product not found');
+            throw new ProductNotFoundException('Product not found');
         }
-        
+
+        $date ??= new DateTimeImmutable();
         $dateFormat = $date->format('Y-m-d-H');
         $key = sprintf(self::VIEW_HOUR_KEY, $dateFormat);
         $this->redis->zincrby($key, $countView, (string) $productId);
     }
-    
-    
+
+
     public function writeUserView(int $productId, int $userId): void
     {
         if (!$this->productRepository->findById($productId)) {
-            throw new CategoryNoFoundException('Product not found');
+            throw new ProductNotFoundException('Product not found');
         }
 
         $listKey = sprintf(self::USER_VIEW, $userId);
